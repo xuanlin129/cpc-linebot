@@ -1,6 +1,7 @@
 import express from 'express';
 import { middleware, messagingApi } from '@line/bot-sdk';
 import oilPrice from './commands/oilPrice.js';
+import station from './commands/station.js';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -16,11 +17,15 @@ const client = new MessagingApiClient({
 });
 
 async function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
+  if (event.type !== 'message') {
     return null;
   }
 
   let replyMessage;
+
+  if (event.message.type === 'location') {
+    replyMessage = await station(event);
+  }
 
   if (event.message.text === '中油直營站查詢') {
     replyMessage = {
