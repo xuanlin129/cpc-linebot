@@ -1,5 +1,6 @@
 import express from 'express';
 import { middleware, messagingApi } from '@line/bot-sdk';
+import oilPrice from './commands/oilPrice.js';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -38,10 +39,7 @@ async function handleEvent(event) {
       },
     };
   } else if (event.message.text === '油價查詢') {
-    replyMessage = {
-      type: 'text',
-      text: '油價查詢開發中',
-    };
+    replyMessage = await oilPrice(event);
   }
 
   if (!replyMessage) {
