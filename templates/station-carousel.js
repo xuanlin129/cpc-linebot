@@ -1,5 +1,5 @@
 const bubble = (data) =>
-  data.slice(0, 5).map((info) => ({
+  data.slice(0, 10).map((info) => ({
     type: 'bubble',
     body: {
       type: 'box',
