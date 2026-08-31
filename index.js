@@ -2,6 +2,11 @@ import express from 'express';
 import { middleware, messagingApi } from '@line/bot-sdk';
 import oilPrice from './commands/oilPrice.js';
 import station from './commands/station.js';
+import { getMongoConfig, getMongoDb, ensureOilPriceIndexes } from './db/mongo.js';
+import { MongoOilPriceRepository } from './repositories/oilPriceRepository.js';
+import { fetchCurrentOilPrices } from './services/cpcOilPriceService.js';
+import { isAuthorizedCronRequest } from './services/cronAuth.js';
+import { runWeeklyOilPriceNotification } from './services/weeklyOilPriceNotificationService.js';
 
 const { MessagingApiClient } = messagingApi;
 
@@ -15,6 +20,13 @@ const app = express();
 const client = new MessagingApiClient({
   channelAccessToken: config.channelAccessToken,
 });
+
+async function createOilPriceRepository() {
+  const db = await getMongoDb(getMongoConfig());
+  await ensureOilPriceIndexes(db);
+
+  return new MongoOilPriceRepository(db);
+}
 
 async function handleEvent(event) {
   if (event.type !== 'message') {
@@ -82,6 +94,29 @@ app.post('/webhook', middleware(config), (req, res) => {
       res.status(500).end();
     });
 });
+
+async function handleWeeklyOilPriceCron(req, res) {
+  if (!isAuthorizedCronRequest(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const oilPriceRepository = await createOilPriceRepository();
+    const result = await runWeeklyOilPriceNotification({
+      fetchCurrentOilPrices,
+      oilPriceRepository,
+      lineClient: client,
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('Weekly Oil Price Notification Error:', error);
+    return res.status(500).json({ error: 'Weekly oil price notification failed' });
+  }
+}
+
+app.get('/cron/weekly-oil-price', handleWeeklyOilPriceCron);
+app.post('/cron/weekly-oil-price', handleWeeklyOilPriceCron);
 
 export default app;
 

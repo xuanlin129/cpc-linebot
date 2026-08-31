@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/cron/weekly-oil-price",
+      "schedule": "10 4 * * 0"
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
