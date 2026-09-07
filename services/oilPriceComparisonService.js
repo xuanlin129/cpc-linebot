@@ -30,11 +30,15 @@ export function summarizeMovements(movements) {
 }
 
 export function formatSignedDifference(difference) {
-  if (difference > 0) {
-    return `+${difference.toFixed(1)}`;
+  if (difference === 0) {
+    return '不調整';
   }
 
-  return difference.toFixed(1);
+  if (difference > 0) {
+    return `↑${difference.toFixed(1)}`;
+  }
+
+  return `↓${Math.abs(difference).toFixed(1)}`;
 }
 
 function getDirection(difference) {

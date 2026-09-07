@@ -17,26 +17,28 @@ export function createCurrentOilPriceMessage(snapshotSet) {
 
 export function createWeeklyOilMovementMessage(effectiveDate, movements) {
   return createOilFlexMessage({
-    title: '本週油價',
+    title: '下週油價公告',
+    header: createWeeklyAnnouncementHeader(),
+    size: 'giga',
     effectiveDate,
-    rows: movements.map((movement) =>
-      createWeeklyOilMovementRow(getProductConfig(movement.productCode), movement),
-    ),
+    rows: movements.map((movement) => createWeeklyOilMovementRow(getProductConfig(movement.productCode), movement)),
   });
 }
 
 export default createCurrentOilPriceMessage;
 
-function createOilFlexMessage({ title, effectiveDate, rows }) {
+function createOilFlexMessage({ title, header = null, size = null, effectiveDate, rows }) {
   return {
     type: 'flex',
     altText: title,
     contents: {
       type: 'bubble',
+      ...(size ? { size } : {}),
+      ...(header ? { header } : {}),
       body: {
         type: 'box',
         layout: 'vertical',
-        contents: [createHeader(title), ...rows],
+        contents: header ? rows : [createHeader(title), ...rows],
       },
       footer: {
         type: 'box',
@@ -59,6 +61,25 @@ function createOilFlexMessage({ title, effectiveDate, rows }) {
         spacing: 'sm',
       },
     },
+  };
+}
+
+function createWeeklyAnnouncementHeader() {
+  return {
+    type: 'box',
+    layout: 'vertical',
+    backgroundColor: '#FFD54F',
+    paddingAll: 'lg',
+    contents: [
+      {
+        type: 'text',
+        text: '下週油價公告',
+        size: 'xl',
+        weight: 'bold',
+        color: '#3A2A00',
+        align: 'center',
+      },
+    ],
   };
 }
 
@@ -111,29 +132,73 @@ function createWeeklyOilMovementRow(oilConfig, movement) {
   const differenceText = formatSignedDifference(movement.difference);
   const color = getMovementColor(movement.direction);
 
-  return createOilRow(oilConfig, [
+  return createOilRow(
+    oilConfig,
+    [
+      {
+        type: 'text',
+        text: movement.currentPrice.toFixed(1),
+        size: 'xxl',
+        weight: 'bold',
+        color,
+        align: 'end',
+        flex: 1,
+      },
+      {
+        type: 'text',
+        text: '元',
+        color: MUTED_TEXT,
+        align: 'end',
+        flex: 0,
+        margin: 'md',
+      },
+      {
+        type: 'box',
+        layout: 'vertical',
+        width: '54px',
+        contents: [
+          {
+            type: 'text',
+            text: differenceText,
+            color,
+            align: 'end',
+            size: getWeeklyDifferenceTextSize(movement.direction),
+            weight: 'bold',
+            adjustMode: 'shrink-to-fit',
+          },
+        ],
+      },
+    ],
     {
-      type: 'text',
-      text: movement.currentPrice.toFixed(1),
-      size: 'xl',
-      weight: 'bold',
-      color: BRAND_RED,
-      flex: 0,
-      align: 'end',
+      labelSize: getWeeklyOilLabelSize(oilConfig),
+      priceBoxOptions: {
+        width: '180px',
+        spacing: 'md',
+      },
+      paddingEnd: 'xxl',
     },
-    {
-      type: 'text',
-      text: differenceText,
-      color,
-      align: 'end',
-      flex: 0,
-      margin: 'md',
-      weight: 'bold',
-    },
-  ]);
+  );
 }
 
-function createOilRow(oilConfig, priceContents) {
+function getWeeklyDifferenceTextSize(direction) {
+  if (direction === 'unchanged') {
+    return 'sm';
+  }
+
+  return 'md';
+}
+
+function getWeeklyOilLabelSize(oilConfig) {
+  if (oilConfig.code === 'diesel') {
+    return 'xl';
+  }
+
+  return 'xxl';
+}
+
+function createOilRow(oilConfig, priceContents, rowOptions = {}) {
+  const { labelSize = oilConfig.size, paddingEnd = 'lg', priceBoxOptions = {} } = rowOptions;
+
   return {
     type: 'box',
     layout: 'horizontal',
@@ -145,7 +210,7 @@ function createOilRow(oilConfig, priceContents) {
           {
             type: 'text',
             text: oilConfig.label,
-            size: oilConfig.size,
+            size: labelSize,
             weight: 'bold',
             flex: 0,
           },
@@ -172,12 +237,13 @@ function createOilRow(oilConfig, priceContents) {
         contents: priceContents,
         alignItems: 'center',
         flex: 0,
+        ...priceBoxOptions,
       },
     ],
     justifyContent: 'space-between',
-    paddingStart: '10%',
-    paddingEnd: '10%',
-    margin: 'xl',
+    paddingStart: 'xxl',
+    paddingEnd,
+    margin: 'lg',
   };
 }
 

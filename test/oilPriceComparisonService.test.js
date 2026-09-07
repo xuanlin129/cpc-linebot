@@ -27,7 +27,7 @@ test('classifies increased, decreased, and unchanged oil prices', () => {
       ['98', 0, 'unchanged'],
     ],
   );
-  assert.equal(summarizeMovements(movements), '92 +0.2, 95 -0.2, 98 0.0');
+  assert.equal(summarizeMovements(movements), '92 ↑0.2, 95 ↓0.2, 98 不調整');
 });
 
 function snapshotSet(effectiveDate, rows) {
